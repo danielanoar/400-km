@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#7fb5dc">
+<meta name="robots" content="noindex">
+<title>400 km</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,500&display=swap">
+<style>
+  :root{
+    --paper:#fbf4e4; --ink:#2b2a33; --soft:#6d6658; --red:#d9483b; --line:#e0d4bb;
+    --hand:'Caveat','Bradley Hand','Segoe Script',cursive;
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:#20242e;overflow:hidden;overscroll-behavior:none}
+  body{font-family:var(--sans);color:var(--ink);-webkit-user-select:none;user-select:none}
+  #stage{position:relative;width:100%;max-width:520px;height:100vh;height:100dvh;margin:0 auto;overflow:hidden;touch-action:none;background:#7fb5dc}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+  /* HUD */
+  #hud{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 12px) 16px 0;display:none;pointer-events:none;color:#fff;text-shadow:0 1px 3px rgba(20,30,50,.45)}
+  #hud .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  #left{font:600 19px/1.1 var(--serif)}
+  #left small{display:block;font:500 12px/1.3 var(--sans);opacity:.92}
+  #right{display:flex;align-items:center;gap:10px}
+  #kisses{font:700 22px/1 var(--sans);font-variant-numeric:tabular-nums}
+  #kisses span{color:#ffd9d3}
+  #mute{pointer-events:auto;width:44px;height:44px;border:0;border-radius:50%;background:rgba(20,30,50,.28);color:#fff;font-size:18px;cursor:pointer}
+  #bar{height:5px;margin-top:8px;border-radius:3px;background:rgba(255,255,255,.35);overflow:hidden}
+  #bar i{display:block;height:100%;width:0;background:#fff;border-radius:3px}
+
+  /* Pantallas */
+  .screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 20px);touch-action:manipulation}
+  .screen.on{display:flex}
+  .btn{display:block;width:100%;min-height:52px;border:0;border-radius:14px;background:var(--red);color:#fff;font:700 17px/1.2 var(--sans);cursor:pointer;text-decoration:none;text-align:center;padding:16px}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+
+  /* Portada */
+  #intro{align-items:flex-start;padding-top:calc(env(safe-area-inset-top) + 8vh)}
+  #intro .inner{width:100%;text-align:center;color:#1d2a48}
+  #intro .para{font:700 28px/1 var(--hand)}
+  #intro h1{font:600 clamp(68px,22vw,104px)/1 var(--serif);letter-spacing:-.03em;margin:6px 0 10px}
+  #intro p{font:500 18px/1.35 var(--serif);font-style:italic;max-width:19em;margin:0 auto}
+  #intro .foot{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 22px)}
+  #intro .how{color:#2b2a33;font:500 14px/1.4 var(--sans);text-align:center;margin-bottom:12px}
+
+  /* Postal */
+  #card{background:rgba(25,32,48,.32)}
+  .postal{position:relative;width:100%;max-width:370px;background:var(--paper);border-radius:6px;padding:20px 20px 16px;box-shadow:0 18px 44px rgba(15,20,35,.38);transform:rotate(-1.4deg);animation:drop .38s cubic-bezier(.2,1.3,.5,1)}
+  @keyframes drop{from{transform:translateY(26px) rotate(3deg);opacity:0}}
+  .postal .sello{position:absolute;right:16px;top:16px;width:50px;height:60px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;outline:3px dotted var(--paper);outline-offset:-1px;transform:rotate(3deg)}
+  .postal .kicker{font:600 11px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+  .postal h2{font:600 26px/1.1 var(--serif);margin:7px 66px 14px 0;letter-spacing:-.01em}
+  .postal p{font:500 26px/1.18 var(--hand);min-height:3.5em}
+  .postal .tap{margin-top:12px;font:500 13px/1 var(--sans);color:var(--soft);text-align:right;opacity:0;transition:opacity .25s}
+  .postal.ready .tap{opacity:1}
+
+  /* Final */
+  #end{align-items:flex-start;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;background:rgba(25,28,48,.42)}
+  #end .wrap{width:100%;max-width:380px;margin:auto;animation:drop .5s ease-out}
+  #end .carta{color:#fff;margin-bottom:18px;text-shadow:0 1px 6px rgba(15,20,40,.55)}
+  #end h2{font:600 34px/1.05 var(--serif);margin-bottom:10px}
+  #end .carta p{font:500 26px/1.16 var(--hand)}
+  #end .carta .firma{text-align:right;margin-top:8px;font-weight:700}
+  .vale{position:relative;background:var(--paper);border-radius:12px;padding:20px 20px 18px;text-align:center;box-shadow:0 18px 44px rgba(15,20,35,.4)}
+  .vale .kicker{font:600 11px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+  .vale .n{font:600 84px/1 var(--serif);color:var(--red);letter-spacing:-.03em;margin:8px 0 0;font-variant-numeric:tabular-nums}
+  .vale .q{font:600 24px/1.1 var(--serif);margin-bottom:12px}
+  .vale hr{border:0;border-top:2px dashed var(--line);margin:14px -20px}
+  .vale .when{font:700 25px/1.1 var(--hand)}
+  .vale small{display:block;margin-top:10px;font:400 12px/1.45 var(--sans);color:var(--soft)}
+  .acts{margin-top:14px;display:grid;gap:10px}
+  .acts .ghost{color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6)}
+  @media (prefers-reduced-motion:reduce){.postal,#end .wrap{animation:none}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+
+  <div id="hud">
+    <div class="row">
+      <div id="left"><small>Faltan</small><b id="km">400 km</b></div>
+      <div id="right">
+        <div id="kisses" aria-label="Besos"><span>♥</span> <b id="kn">0</b></div>
+        <button id="mute" aria-label="Quitar el sonido">♪</button>
+      </div>
+    </div>
+    <div id="bar"><i id="fill"></i></div>
+  </div>
+
+  <div id="intro" class="screen on">
+    <div class="inner">
+      <div class="para" id="para">Para ti</div>
+      <h1>400 km</h1>
+      <p>Es lo que hay entre tú y yo.<br>Hoy conduces tú.</p>
+    </div>
+    <div class="foot">
+      <div class="how">Toca la pantalla para saltar (sí, este coche salta).<br>Cada ♥ es un beso que te debo.</div>
+      <button class="btn" id="go">Arrancar</button>
+    </div>
+  </div>
+
+  <div id="card" class="screen">
+    <div class="postal" id="postal">
+      <div class="sello">♥</div>
+      <div class="kicker">Postal desde</div>
+      <h2 id="pTitle"></h2>
+      <p id="pText"></p>
+      <div class="tap">Toca para seguir →</div>
+    </div>
+  </div>
+
+  <div id="end" class="screen">
+    <div class="wrap">
+      <div class="carta">
+        <h2>Has llegado.</h2>
+        <p id="letter"></p>
+        <p class="firma" id="firma"></p>
+      </div>
+      <div class="vale">
+        <div class="kicker">Vale canjeable en persona</div>
+        <div class="n" id="vN">0</div>
+        <div class="q">besos</div>
+        <hr>
+        <div class="when" id="vWhen"></div>
+        <small id="vFine"></small>
+      </div>
+      <div class="acts">
+        <a class="btn" id="claim" target="_blank" rel="noopener">Reclamar por WhatsApp</a>
+        <button class="btn ghost" id="again">Volver a conducir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============  TODO LO PERSONAL ESTÁ AQUÍ  ============ */
+const CONFIG = {
+  ella: 'Elenita',     // su nombre o mote; vacío = "Para ti"
+  yo: '',              // tu firma; vacío = sin firma
+  fecha: '2026-11-14T11:00', // para la cuenta atrás; null = "la semana que viene"
+  cita: 'el sábado a las 11',
+  whatsapp: '',        // tu número con prefijo; vacío = elige contacto
+  carta: 'Cuatrocientos kilómetros en dos minutos. Ojalá fuera siempre así de fácil, Elenita. Como no lo es, el sábado los hago yo de verdad. A las 11 estoy ahí.',
+  postales: [
+    { km: 90,  lugar: 'Somosierra', txt: 'Madrid ya solo se ve por el retrovisor. Tiene de todo, menos lo único que le falta: tú.' },
+    { km: 160, lugar: 'Aranda de Duero', txt: 'Huele a lechazo. No paro. Bueno, cinco minutos. Que no, que sigo. Esto es lo más romántico que he hecho nunca.' },
+    { km: 240, lugar: 'Burgos', txt: 'Hace un frío que no es normal. Aunque el peor lo conozco: el de la cama cuando tú estás a 400 km.' },
+    { km: 305, lugar: 'Aguilar de Campoo', txt: 'Aquí el aire huele a galletas, de verdad. Te iba a guardar una, pero me la he comido. Te debo otra.' },
+    { km: 335, lugar: 'Reinosa', txt: 'Niebla. No se ve absolutamente nada. Da igual, sé perfectamente hacia dónde voy.' },
+    { km: 368, lugar: 'Cantabria', txt: 'Verde, vacas y sirimiri. Aquí me van a llamar madrileño. Lo acepto: por ti aguanto lo que sea.' },
+  ],
+};
+/* ====================================================== */
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), cv = $('c'), ctx = cv.getContext('2d');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TOTAL = 400;
+// iPhones anteriores a iOS 16 no tienen roundRect
+if (!ctx.roundRect) CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h) { this.rect(x, y, w, h); };
+
+let W = 0, H = 0, u = 1, GY = 0, BY = 0, ppk = 60, carX = 0;
+function resize() {
+  const r = stage.getBoundingClientRect();
+  W = r.width; H = r.height;
+  const d = Math.min(devicePixelRatio || 1, 2);
+  cv.width = W * d; cv.height = H * d;
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  u = Math.min(W / 390, H / 700);
+  GY = H * 0.68; BY = GY + 62 * u;
+  ppk = 61 * u; carX = W * 0.24;
+}
+addEventListener('resize', resize); resize();
+
+/* ---------- paisaje por kilómetro ---------- */
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const KEYS = [
+  { k: 0,   t: '#7fb5dc', b: '#fbe3c4', f: '#a9b3bf', n: '#c9a86a', g: '#d8bd84', fh: 40,  nh: 18 },
+  { k: 90,  t: '#6a9fcb', b: '#dcebee', f: '#6c84a0', n: '#7b8c6a', g: '#a8a673', fh: 125, nh: 42 },
+  { k: 160, t: '#83b4d8', b: '#f6e2b7', f: '#c4a970', n: '#b58d4f', g: '#d1ad6b', fh: 34,  nh: 18 },
+  { k: 240, t: '#8da4b8', b: '#d9dee0', f: '#9aa7ae', n: '#a89f86', g: '#c6bda5', fh: 42,  nh: 20 },
+  { k: 325, t: '#7a8a95', b: '#c3cdcc', f: '#70858a', n: '#5d7f63', g: '#7c9a6f', fh: 110, nh: 46 },
+  { k: 372, t: '#6d8a9d', b: '#c9d6c7', f: '#4f7f6b', n: '#3f8a55', g: '#5da264', fh: 95,  nh: 42 },
+  { k: 400, t: '#4a5f94', b: '#f7b27a', f: '#2f6a68', n: '#2f7a50', g: '#4c8f58', fh: 0,   nh: 0 },
+].map(o => ({ ...o, T: hex(o.t), B: hex(o.b), F: hex(o.f), N: hex(o.n), G: hex(o.g) }));
+const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+const css = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+function env(k) {
+  let i = 0; while (i < KEYS.length - 2 && k > KEYS[i + 1].k) i++;
+  const A = KEYS[i], B = KEYS[i + 1];
+  let t = Math.min(1, Math.max(0, (k - A.k) / (B.k - A.k))); t = t * t * (3 - 2 * t);
+  return { t: mix(A.T, B.T, t), b: mix(A.B, B.B, t), f: mix(A.F, B.F, t), n: mix(A.N, B.N, t), g: mix(A.G, B.G, t), fh: A.fh + (B.fh - A.fh) * t, nh: A.nh + (B.nh - A.nh) * t };
+}
+const hash = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/* ---------- estado ---------- */
+const POST = CONFIG.postales;
+let G;
+function fresh() {
+  return { state: 'intro', km: 0, y: 0, vy: 0, kisses: 0, fines: 0, inv: 0, slow: 0, shake: 0, flash: 0, t: 0,
+    ents: [], parts: [], floats: [], next: 9, pIdx: 0, buffer: 0, cookie: false, hinted: false, endT: 0, cardAt: 0 };
+}
+G = fresh();
+const dbg = /km=(\d+)/.exec(location.hash);
+
+/* ---------- sonido ---------- */
+let ac = null, muted = false;
+function audio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state === 'suspended') ac.resume(); }
+function tone(f, d = .1, type = 'sine', v = .06, slide = 0, delay = 0) {
+  if (!ac || muted) return;
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + .02);
+}
+const buzz = ms => { try { if (!muted && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} };
+
+/* ---------- aparición de cosas ---------- */
+const SAY = { cone: 'Perdón, señor cono', sheep: '¡Beee!', cow: '¡Muuu!', ice: '¡Patinazo!', puddle: '¡Sirimiri!', radar: '¡Flash! Multa: 1 beso' };
+const SIZE = { cone: [26, 36], sheep: [50, 40], cow: [70, 52], ice: [62, 8], puddle: [62, 8], radar: [26, 44] };
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function kind(k) {
+  if (k < 60) return 'cone';
+  if (k < 130) return pick(['cone', 'cone', 'radar']);
+  if (k < 225) return pick(['sheep', 'sheep', 'radar']);
+  if (k < 300) return pick(['ice', 'sheep', 'ice']);
+  if (k < 350) return pick(['sheep', 'radar', 'ice']);
+  return pick(['cow', 'puddle', 'cow']);
+}
+const heart = (k, h) => G.ents.push({ type: 'heart', km: k, h });
+function spawn() {
+  const k = G.next;
+  if (k > 391) return;
+  const r = Math.random();
+  if (k < 14) { for (let i = 0; i < 4; i++) heart(k + i, 26); G.next = k + 8; return; }
+  if (!G.hinted) { G.hinted = true; G.ents.push({ type: 'cone', km: k + 2, hint: true }); [68, 118, 68].forEach((h, i) => heart(k + 1 + i, h)); G.next = k + 9; return; }
+  if (r < .45) { G.ents.push({ type: kind(k), km: k + 1 }); [68, 118, 68].forEach((h, i) => heart(k + i, h)); }
+  else if (r < .65) { for (let i = 0; i < 4; i++) heart(k + i, 26); }
+  else if (r < .85) { [92, 118, 92].forEach((h, i) => heart(k + i, h)); }
+  else G.ents.push({ type: kind(k), km: k });
+  G.next = k + 5.5 + Math.random() * 3.5;
+}
+function say(txt, col = '#fff') { G.floats.push({ txt, col, x: carX + 10 * u, y: BY - G.y - 66 * u, life: 1.3, max: 1.3 }); }
+function burst(x, y, n, col = '#ff6b5e') {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.28, s = (40 + Math.random() * 120) * u;
+    G.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 40 * u, life: .7, max: .7, r: (4 + Math.random() * 5) * u, col, g: 240 * u });
+  }
+}
+
+/* ---------- control ---------- */
+function jump() { if (G.state !== 'play') return; if (G.y <= 0.5) doJump(); else G.buffer = .14; }
+function doJump() { G.vy = 760 * u; G.y = 1; G.buffer = 0; tone(330, .13, 'triangle', .05, 1.9); }
+stage.addEventListener('pointerdown', e => {
+  if (G.state === 'play' && !e.target.closest('#mute')) { e.preventDefault(); jump(); }
+  else if (G.state === 'card' && performance.now() - G.cardAt > 700) closeCard();
+});
+addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); if (G.state === 'card') { if (performance.now() - G.cardAt > 700) closeCard(); } else jump(); } });
+$('go').onclick = () => { audio(); start(); };
+$('again').onclick = () => { $('end').classList.remove('on'); start(); };
+$('mute').onclick = e => { e.stopPropagation(); muted = !muted; $('mute').textContent = muted ? '×' : '♪'; $('mute').setAttribute('aria-label', muted ? 'Poner el sonido' : 'Quitar el sonido'); };
+function start() {
+  G = fresh(); G.state = 'play';
+  if (dbg) { G.km = +dbg[1]; G.next = G.km + 8; G.hinted = true; while (G.pIdx < POST.length && POST[G.pIdx].km <= G.km) G.pIdx++; }
+  $('intro').classList.remove('on'); $('hud').style.display = 'block';
+  $('kn').textContent = '0'; tone(196, .22, 'sawtooth', .025, 1.5);
+}
+
+/* ---------- postales ---------- */
+function openCard(p) {
+  G.state = 'card'; G.cardAt = performance.now();
+  $('pTitle').textContent = p.lugar; $('pText').textContent = p.txt;
+  const el = $('postal'); el.classList.remove('ready');
+  el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+  $('card').classList.add('on');
+  tone(660, .1, 'sine', .04); tone(880, .14, 'sine', .04, 1, .09);
+  setTimeout(() => el.classList.add('ready'), 700);
+}
+function closeCard() { $('card').classList.remove('on'); G.state = 'play'; G.inv = Math.max(G.inv, 1.1); }
+
+/* ---------- final ---------- */
+function plural(n, s, p) { return n + ' ' + (n === 1 ? s : p); }
+function whenText() {
+  if (!CONFIG.fecha) return 'Válido la semana que viene';
+  const ms = new Date(CONFIG.fecha) - Date.now();
+  if (!(ms > 0)) return 'Válido desde ya';
+  const d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
+  if (d === 0 && h === 0) return 'Válido dentro de nada';
+  return 'Válido ' + CONFIG.cita + '. Faltan ' + (d ? plural(d, 'día', 'días') + (h ? ' y ' : '') : '') + (h ? plural(h, 'hora', 'horas') : '') + '.';
+}
+function finish() {
+  G.state = 'end';
+  const regalo = G.kisses < 10, n = Math.max(G.kisses, 10);
+  $('hud').style.display = 'none';
+  $('letter').textContent = CONFIG.carta;
+  $('firma').textContent = CONFIG.yo ? '— ' + CONFIG.yo : '';
+  $('vN').textContent = n;
+  $('vWhen').textContent = whenText();
+  const multas = G.fines === 0 ? 'Sin multas: conduces mejor que yo.' : `Incluye ${plural(G.fines, 'multa cobrada', 'multas cobradas')} en besos.`;
+  $('vFine').textContent = (regalo ? 'Has conducido fatal, así que te regalo hasta 10. ' : '') + multas + ' No caduca. No acumulable con excusas. Se pagan al contado, sin prisa.';
+  const msg = `Ya he llegado a Santander con ${n} besos en el vale. Ven a pagar.`;
+  $('claim').href = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`;
+  $('end').scrollTop = 0; $('end').classList.add('on');
+}
+
+/* ---------- lógica ---------- */
+const figX = () => carX + 92 * u + (TOTAL - G.km) * ppk;
+function update(dt) {
+  G.t += dt;
+  if (G.state === 'arrived') {
+    G.endT += dt;
+    if (Math.random() < dt * 9) burst(carX + 46 * u + Math.random() * 60 * u, BY - 60 * u - Math.random() * 50 * u, 1);
+    if (G.endT > 2.1) finish();
+  }
+  if (G.state === 'end') { if (Math.random() < dt * 3) burst(Math.random() * W, GY * Math.random(), 1); }
+  if (G.state === 'play') {
+    let rate = 4.3 * (1 + .18 * G.km / TOTAL);
+    if (G.slow > 0) { G.slow -= dt; rate *= .68; }
+    if (G.km > 395) rate *= clamp((TOTAL - G.km) / 5, .07, 1);
+    G.km = Math.min(TOTAL, G.km + rate * dt);
+    if (G.inv > 0) G.inv -= dt;
+
+    // salto
+    if (G.y > 0 || G.vy > 0) {
+      G.vy -= 2200 * u * dt; G.y += G.vy * dt;
+      if (G.y <= 0) { G.y = 0; G.vy = 0; if (G.buffer > 0) doJump(); }
+    }
+    if (G.buffer > 0) G.buffer -= dt;
+
+    // aparición
+    const reach = G.km + (W - carX) / ppk + 3;
+    while (G.next < reach && G.next <= 391) spawn();
+    if (!G.cookie && G.km > 285) { G.cookie = true; G.ents.push({ type: 'cookie', km: 301, h: 96 }); }
+
+    // choques
+    for (const e of G.ents) {
+      const dx = (e.km - G.km) * ppk;
+      if (e.type === 'heart' || e.type === 'cookie') {
+        const dy = (e.h * u) - (G.y + 22 * u);
+        if (!e.got && Math.hypot(dx, dy) < 40 * u) {
+          e.got = true;
+          const v = e.type === 'cookie' ? 3 : 1;
+          G.kisses += v; $('kn').textContent = G.kisses;
+          tone(880 + Math.min(G.kisses, 60) * 6, .09, 'sine', .05, 1.5);
+          burst(carX + dx, BY - e.h * u, 4);
+          if (v > 1) say('¡Galleta! +3 besos', '#ffe6a8');
+        }
+      } else if (!e.hit && G.inv <= 0) {
+        const [w, h] = SIZE[e.type];
+        if (Math.abs(dx) < (w * .36 + 24) * u && G.y < h * .72 * u) {
+          e.hit = true; G.inv = 1.3; G.slow = .55; G.fines++;
+          G.kisses = Math.max(0, G.kisses - 1); $('kn').textContent = G.kisses;
+          if (!reduced) G.shake = .3;
+          if (e.type === 'radar') G.flash = reduced ? 0 : .9;
+          say(SAY[e.type]);
+          tone(110, .24, 'square', .05, .6); buzz(60);
+        }
+      }
+    }
+    G.ents = G.ents.filter(e => (e.km - G.km) * ppk > -carX - 90 * u && !(e.got && e.type !== 'x'));
+
+    // postales y llegada
+    if (G.pIdx < POST.length && G.km >= POST[G.pIdx].km) { openCard(POST[G.pIdx++]); }
+    if (G.km >= TOTAL - .06 && G.y === 0) {
+      G.state = 'arrived'; G.km = TOTAL; $('hud').style.display = 'none';
+      [523, 659, 784, 1047].forEach((f, i) => tone(f, .35, 'triangle', .06, 1, i * .15));
+    }
+    // HUD
+    $('km').textContent = Math.ceil(TOTAL - G.km) + ' km';
+    $('fill').style.width = (G.km / TOTAL * 100) + '%';
+    if (G.t % .25 < dt && G.y === 0) G.parts.push({ x: carX - 36 * u, y: BY - 12 * u, vx: -40 * u, vy: -18 * u, life: .7, max: .7, r: 5 * u, col: 'rgba(255,255,255,.7)', g: 0, puff: true });
+  }
+  const scroll = G.state === 'play' ? 4.5 * ppk : 0;
+  for (const p of G.parts) { p.life -= dt; p.x += (p.vx - scroll * .3) * dt; p.y += p.vy * dt; p.vy += p.g * dt; }
+  G.parts = G.parts.filter(p => p.life > 0);
+  for (const f of G.floats) { f.life -= dt; f.y -= 34 * u * dt; }
+  G.floats = G.floats.filter(f => f.life > 0);
+  if (G.shake > 0) G.shake -= dt;
+  if (G.flash > 0) G.flash -= dt * 2.6;
+}
+
+/* ---------- dibujo: paisaje ---------- */
+function hills(off, base, amp, seed, color) {
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, base);
+  for (let x = 0; x <= W + 8; x += 8) {
+    const p = x + off;
+    const h = (Math.sin(p * .0052 + seed) * .42 + Math.sin(p * .0121 + seed * 2) * .24 + Math.sin(p * .027 + seed * 3) * .08 + .62) * amp;
+    ctx.lineTo(x, base - h);
+  }
+  ctx.lineTo(W, base); ctx.closePath(); ctx.fill();
+}
+const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+function circle(x, y, r, c) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.fill(); }
+function tri(a, b, c, d, e, f, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.lineTo(e, f); ctx.closePath(); ctx.fill(); }
+
+/* Puntos de referencia lejanos, siempre en silueta */
+function torres(x, c) { [[0, 150], [30, 168], [62, 158], [94, 142]].forEach(([d, h]) => rect(x + d * u, GY - h * u, 20 * u, h * u, c)); rect(x + 36 * u, GY - 186 * u, 2 * u, 20 * u, c); }
+function catedral(x, c) {
+  rect(x - 70 * u, GY - 62 * u, 140 * u, 62 * u, c);
+  rect(x - 44 * u, GY - 104 * u, 22 * u, 104 * u, c); rect(x + 22 * u, GY - 104 * u, 22 * u, 104 * u, c);
+  tri(x - 46 * u, GY - 104 * u, x - 33 * u, GY - 164 * u, x - 20 * u, GY - 104 * u, c);
+  tri(x + 20 * u, GY - 104 * u, x + 33 * u, GY - 164 * u, x + 46 * u, GY - 104 * u, c);
+  rect(x - 8 * u, GY - 84 * u, 16 * u, 22 * u, c); tri(x - 12 * u, GY - 84 * u, x, GY - 118 * u, x + 12 * u, GY - 84 * u, c);
+}
+function molino(x, t, c) {
+  const top = GY - 112 * u; ctx.strokeStyle = c; ctx.lineWidth = 4 * u; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, GY); ctx.lineTo(x, top); ctx.stroke();
+  ctx.lineWidth = 2.6 * u;
+  for (let i = 0; i < 3; i++) { const a = t * 1.5 + i * 2.094 + x * .01; ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x + Math.cos(a) * 44 * u, top + Math.sin(a) * 44 * u); ctx.stroke(); }
+}
+function fabrica(x, c) {
+  rect(x - 56 * u, GY - 44 * u, 112 * u, 44 * u, c); rect(x + 28 * u, GY - 92 * u, 14 * u, 92 * u, c);
+  circle(x - 16 * u, GY - 66 * u, 22 * u, '#c98f4e'); [[-24, -72], [-10, -76], [-18, -60], [-6, -62]].forEach(([a, b]) => circle(x + a * u, GY + b * u, 2.6 * u, '#6a4524'));
+}
+function faro(x) {
+  ctx.fillStyle = '#2d6a4b'; ctx.beginPath(); ctx.moveTo(x - 110 * u, GY); ctx.quadraticCurveTo(x - 60 * u, GY - 64 * u, x, GY - 66 * u); ctx.quadraticCurveTo(x + 70 * u, GY - 66 * u, x + 130 * u, GY); ctx.closePath(); ctx.fill();
+  rect(x - 8 * u, GY - 122 * u, 16 * u, 58 * u, '#f4efe4'); rect(x - 8 * u, GY - 100 * u, 16 * u, 10 * u, '#c9493d');
+  rect(x - 6 * u, GY - 132 * u, 12 * u, 10 * u, '#ffd98a'); tri(x - 9 * u, GY - 132 * u, x, GY - 143 * u, x + 9 * u, GY - 132 * u, '#40424c');
+  const a = G.t * .8; ctx.fillStyle = 'rgba(255,225,150,.16)'; ctx.beginPath(); ctx.moveTo(x, GY - 127 * u);
+  const dir = Math.cos(a) > 0 ? 1 : -1, ln = 240 * u; ctx.lineTo(x + dir * ln, GY - 150 * u); ctx.lineTo(x + dir * ln, GY - 104 * u); ctx.closePath(); ctx.fill();
+}
+function velero(x, y) { tri(x, y - 26 * u, x, y - 3 * u, x + 18 * u, y - 3 * u, '#fff4e6'); rect(x - 12 * u, y - 2 * u, 32 * u, 4 * u, '#2a3350'); }
+
+const FAR = [
+  { k: 3, f: .4, d: torres }, { k: 241, f: .4, d: catedral }, { k: 306, f: .4, d: fabrica },
+];
+const TURB = [268, 276, 283, 291, 298, 345, 352];
+const SIGNS = [...POST.map(p => ({ k: p.km, t: p.lugar })), { k: 396, t: 'SANTANDER' }];
+
+function decor(k, x, c) {
+  const h = hash(Math.round(k * 3)), y = GY + 1;
+  if (k > 386) return;
+  if (k < 60) { if (h < .45) { rect(x - 2 * u, y - 14 * u, 4 * u, 14 * u, '#7a5e3a'); circle(x, y - 20 * u, 11 * u, '#8a9561'); } }
+  else if (k < 130) { if (h < .75) tri(x - 11 * u, y, x, y - 40 * u, x + 11 * u, y, '#4f6b53'); }
+  else if (k < 225) { if (h < .7) { for (let i = 0; i < 4; i++) circle(x + i * 12 * u, y - 5 * u, 5 * u, '#6f7f42'); } }
+  else if (k < 300) { if (h < .55) { rect(x - 1.5 * u, y - 44 * u, 3 * u, 44 * u, '#7c705a'); ctx.fillStyle = '#b5a06b'; ctx.beginPath(); ctx.ellipse(x, y - 40 * u, 7 * u, 18 * u, 0, 0, 6.3); ctx.fill(); } }
+  else if (k < 352) { if (h < .8) tri(x - 11 * u, y, x, y - 44 * u, x + 11 * u, y, '#3f6a55'); }
+  else { if (h < .35) vacaLejos(x, y); else if (h < .7) { rect(x - 2 * u, y - 14 * u, 4 * u, 14 * u, '#5b4a35'); circle(x, y - 24 * u, 15 * u, '#2f7a4b'); } }
+}
+function vacaLejos(x, y) { rect(x - 11 * u, y - 13 * u, 22 * u, 9 * u, '#f4f1e8'); rect(x - 6 * u, y - 13 * u, 6 * u, 6 * u, '#30303a'); rect(x + 9 * u, y - 16 * u, 6 * u, 6 * u, '#f4f1e8'); rect(x - 9 * u, y - 4 * u, 2 * u, 4 * u, '#30303a'); rect(x + 7 * u, y - 4 * u, 2 * u, 4 * u, '#30303a'); }
+
+function drawScene() {
+  const k = G.km, e = env(k);
+  const sx = G.shake > 0 ? (Math.random() - .5) * 7 * u : 0;
+  ctx.save(); ctx.translate(sx, 0);
+
+  const g = ctx.createLinearGradient(0, 0, 0, GY);
+  g.addColorStop(0, css(e.t)); g.addColorStop(1, css(e.b));
+  ctx.fillStyle = g; ctx.fillRect(-10, 0, W + 20, GY + 2);
+
+  // sol
+  const p = k / TOTAL, sunY = H * .17 + Math.pow(p, 3) * (GY - 50 * u - H * .17), sunX = W * .74;
+  const sunC = mix([255, 244, 200], [255, 158, 92], Math.pow(p, 4));
+  circle(sunX, sunY, 62 * u, css(sunC, .18)); circle(sunX, sunY, 28 * u, css(sunC));
+
+  // nubes
+  for (let i = 0; i < 5; i++) {
+    const cx = ((i * 137 + 40) * u - k * ppk * .05 + G.t * 3 * u) % (W + 160 * u), x = cx < -80 * u ? cx + W + 160 * u : cx, y = (50 + i * 37 % 110) * u + H * .08;
+    const col = css(mix([255, 255, 255], e.b, .25), .75);
+    circle(x, y, 14 * u, col); circle(x + 18 * u, y - 6 * u, 18 * u, col); circle(x + 40 * u, y, 13 * u, col);
+  }
+
+  // mar (aparece al final)
+  const seaA = clamp((k - 376) / 10, 0, 1);
+  if (seaA > 0) {
+    const sy = GY - 50 * u, sg = ctx.createLinearGradient(0, sy, 0, GY);
+    sg.addColorStop(0, css(mix(e.b, [240, 145, 110], .5), seaA)); sg.addColorStop(1, css([38, 84, 120], seaA));
+    ctx.fillStyle = sg; ctx.fillRect(-10, sy, W + 20, 52 * u);
+    ctx.fillStyle = `rgba(255,205,140,${.6 * seaA})`;
+    for (let i = 0; i < 6; i++) { const w = (38 - i * 3) * u; ctx.fillRect(sunX - w / 2 + Math.sin(G.t * 1.6 + i) * 4 * u, sy + (4 + i * 8) * u, w, 2 * u); }
+    if (seaA > .5) velero(W * .3 + Math.sin(G.t * .15) * 16 * u, sy + 22 * u);
+  }
+
+  // siluetas
+  const farCol = css(mix(e.f, e.t, .22));
+  for (const L of FAR) { const x = W * .68 + (L.k - k) * ppk * L.f; if (x > -220 * u && x < W + 220 * u) L.d(x, farCol); }
+  for (const t of TURB) { const x = W * .7 + (t - k) * ppk * .4; if (x > -60 * u && x < W + 60 * u) molino(x, G.t, css(mix(e.f, [255, 255, 255], .45))); }
+  const fx = W * .62 + (402 - k) * ppk * .4; if (fx < W + 200 * u) faro(fx);
+
+  // montañas y colinas
+  hills(k * ppk * .22, GY, e.fh * u, 1.3, css(e.f));
+  if (e.fh > 90 && k < 130) hillsSnow(k * ppk * .22, e.fh * u);
+  hills(k * ppk * .5, GY, e.nh * u, 4.1, css(e.n));
+
+  // decoración cercana
+  const cw = 58 * u, off = k * ppk * .75, first = Math.floor(off / cw) - 1;
+  for (let i = first; i < first + W / cw + 3; i++) decor(i * cw / (ppk * .75), i * cw - off, e);
+
+  // suelo y carretera
+  ctx.fillStyle = css(e.g); ctx.fillRect(-10, GY, W + 20, H - GY);
+  const ry = GY + 12 * u, rh = 72 * u;
+  rect(-10, ry, W + 20, rh, '#4b4c56'); rect(-10, ry, W + 20, 3 * u, '#efe6cf'); rect(-10, ry + rh - 3 * u, W + 20, 3 * u, '#efe6cf');
+  const dash = 64 * u, of = (k * ppk) % dash;
+  for (let x = -of; x < W; x += dash) rect(x, ry + rh / 2 - 1.5 * u, 32 * u, 3 * u, '#e9dfc3');
+  // hierba delante
+  const tw = 46 * u, tof = k * ppk * 1.25, tf = Math.floor(tof / tw);
+  for (let i = tf; i < tf + W / tw + 2; i++) {
+    const x = i * tw - tof, h = hash(i), y = ry + rh + (12 + h * (H - ry - rh - 24)) ;
+    if (h < .75 && y < H) { ctx.strokeStyle = css(mix(e.g, [20, 40, 20], .28)); ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 4 * u, y - 9 * u); ctx.moveTo(x, y); ctx.lineTo(x + 4 * u, y - 9 * u); ctx.stroke(); }
+  }
+
+  // carteles
+  for (const s of SIGNS) { const x = carX + (s.k - k) * ppk; if (x > -120 * u && x < W + 120 * u) cartel(x, s.t); }
+
+  // quien espera
+  const fp = figX(); if (fp < W + 40 * u) figura(fp, BY);
+
+  // objetos
+  for (const o of G.ents) {
+    const x = carX + (o.km - k) * ppk; if (x < -90 * u || x > W + 90 * u) continue;
+    const bob = Math.sin(G.t * 5 + o.km) * 3 * u;
+    if (o.type === 'heart') corazon(x, BY - o.h * u + bob, 13 * u, '#ee4a43');
+    else if (o.type === 'cookie') galleta(x, BY - o.h * u + bob);
+    else obst(o.type, x, BY);
+    if (o.hint && x > carX + 40 * u) etiqueta(x, BY - 72 * u, '¡toca!');
+  }
+
+  coche();
+
+  // partículas
+  for (const q of G.parts) {
+    const a = q.life / q.max;
+    if (q.puff) circle(q.x, q.y, q.r * (2 - a), `rgba(255,255,255,${.5 * a})`);
+    else { ctx.globalAlpha = a; corazon(q.x, q.y, q.r, q.col); ctx.globalAlpha = 1; }
+  }
+
+  // clima
+  weather(k);
+
+  // textos flotantes
+  ctx.textAlign = 'center'; ctx.font = `700 ${17 * u}px -apple-system,Segoe UI,Roboto,sans-serif`;
+  for (const f of G.floats) {
+    const a = Math.min(1, f.life / (f.max * .5)), wd = ctx.measureText(f.txt).width, fx = clamp(f.x + wd * .25, wd / 2 + 10, W - wd / 2 - 10);
+    ctx.globalAlpha = a; ctx.fillStyle = 'rgba(30,34,52,.82)';
+    ctx.beginPath(); ctx.roundRect(fx - wd / 2 - 10 * u, f.y - 19 * u, wd + 20 * u, 27 * u, 10 * u); ctx.fill();
+    ctx.fillStyle = f.col; ctx.fillText(f.txt, fx, f.y); ctx.globalAlpha = 1;
+  }
+  if (G.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(.8, G.flash)})`; ctx.fillRect(-10, 0, W + 20, H); }
+  ctx.restore();
+}
+function hillsSnow(off, amp) {
+  ctx.fillStyle = 'rgba(255,255,255,.72)'; ctx.beginPath(); let first = true; const cap = GY - amp * .86;
+  for (let x = 0; x <= W + 8; x += 8) {
+    const p = x + off, h = (Math.sin(p * .0052 + 1.3) * .42 + Math.sin(p * .0121 + 2.6) * .24 + Math.sin(p * .027 + 3.9) * .08 + .62) * amp, y = GY - h;
+    if (first) { ctx.moveTo(x, Math.min(y, cap)); first = false; } else ctx.lineTo(x, Math.min(y, cap));
+  }
+  for (let x = W + 8; x >= 0; x -= 8) ctx.lineTo(x, cap + Math.sin(x * .09) * 3 * u);
+  ctx.closePath(); ctx.fill();
+}
+function weather(k) {
+  const fog = k > 312 && k < 356 ? Math.sin((k - 312) / 44 * Math.PI) : 0;
+  if (fog > 0) {
+    const g = ctx.createLinearGradient(0, H * .15, 0, GY + 30 * u);
+    g.addColorStop(0, `rgba(226,232,232,${.2 * fog})`); g.addColorStop(.75, `rgba(232,237,236,${.72 * fog})`); g.addColorStop(1, `rgba(232,237,236,${.15 * fog})`);
+    ctx.fillStyle = g; ctx.fillRect(-10, 0, W + 20, H);
+  }
+  if (k > 212 && k < 282) {
+    const a = Math.min(1, Math.min(k - 212, 282 - k) / 12); ctx.fillStyle = `rgba(255,255,255,${.85 * a})`;
+    for (let i = 0; i < 44; i++) { const x = ((hash(i) * W * 1.3 - G.t * (60 + hash(i + 9) * 70) * u + Math.sin(G.t + i) * 8) % W + W) % W, y = (hash(i + 3) * H + G.t * (42 + hash(i + 5) * 44) * u) % H; ctx.beginPath(); ctx.arc(x, y, (1.2 + hash(i + 7) * 1.7) * u, 0, 6.3); ctx.fill(); }
+  }
+  if (k > 352 && k < 392) {
+    const a = Math.min(1, Math.min(k - 352, 392 - k) / 8); ctx.strokeStyle = `rgba(235,244,250,${.5 * a})`; ctx.lineWidth = 1.1 * u; ctx.beginPath();
+    for (let i = 0; i < 60; i++) { const x = ((hash(i) * W * 1.4 - G.t * 240 * u) % W + W) % W, y = (hash(i + 2) * H + G.t * 520 * u * (.8 + hash(i + 4) * .4)) % H; ctx.moveTo(x, y); ctx.lineTo(x - 3 * u, y + 11 * u); }
+    ctx.stroke();
+  }
+}
+
+/* ---------- dibujo: personajes y objetos ---------- */
+function corazon(x, y, r, c) {
+  ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x, y + r * .95);
+  ctx.bezierCurveTo(x - r * 1.5, y - r * .15, x - r * .75, y - r * 1.15, x, y - r * .4);
+  ctx.bezierCurveTo(x + r * .75, y - r * 1.15, x + r * 1.5, y - r * .15, x, y + r * .95); ctx.closePath(); ctx.fill();
+}
+function galleta(x, y) { circle(x, y, 18 * u, '#c98f4e'); circle(x, y, 15 * u, '#d9a561'); [[-7, -6], [5, -8], [-2, 3], [8, 4], [-8, 7]].forEach(([a, b]) => circle(x + a * u, y + b * u, 2.5 * u, '#6a4524')); }
+function etiqueta(x, y, t) { ctx.font = `700 ${16 * u}px -apple-system,sans-serif`; ctx.textAlign = 'center'; const w = ctx.measureText(t).width + 18 * u; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(x - w / 2, y - 18 * u, w, 26 * u, 9 * u); ctx.fill(); ctx.fillStyle = '#2b2a33'; ctx.fillText(t, x, y); }
+function cartel(x, t) {
+  rect(x - 2 * u, GY - 44 * u, 4 * u, 54 * u, '#6a6f78');
+  ctx.font = `700 ${12.5 * u}px -apple-system,sans-serif`; const w = ctx.measureText(t).width + 16 * u;
+  ctx.fillStyle = '#23579e'; ctx.beginPath(); ctx.roundRect(x - w / 2, GY - 66 * u, w, 25 * u, 4 * u); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2 * u; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(t, x, GY - 49 * u);
+}
+function obst(t, x, y) {
+  if (t === 'cone') {
+    tri(x - 13 * u, y, x, y - 36 * u, x + 13 * u, y, '#ee7a2c'); rect(x - 8.2 * u, y - 19 * u, 16.4 * u, 6 * u, '#fff6e6'); rect(x - 15 * u, y - 3 * u, 30 * u, 3 * u, '#c95f1b');
+  } else if (t === 'sheep') {
+    rect(x - 15 * u, y - 13 * u, 4 * u, 13 * u, '#34343f'); rect(x + 9 * u, y - 13 * u, 4 * u, 13 * u, '#34343f');
+    [[-13, -21, 11], [0, -26, 13], [12, -20, 11], [-2, -16, 12]].forEach(([a, b, r]) => circle(x + a * u, y + b * u, r * u, '#fbf8ef'));
+    ctx.fillStyle = '#34343f'; ctx.beginPath(); ctx.ellipse(x - 23 * u, y - 25 * u, 7 * u, 9 * u, 0, 0, 6.3); ctx.fill();
+    circle(x - 25 * u, y - 27 * u, 1.4 * u, '#fff');
+  } else if (t === 'cow') {
+    rect(x - 26 * u, y - 16 * u, 6 * u, 16 * u, '#f7f4ea'); rect(x + 18 * u, y - 16 * u, 6 * u, 16 * u, '#f7f4ea');
+    ctx.fillStyle = '#f7f4ea'; ctx.beginPath(); ctx.roundRect(x - 30 * u, y - 44 * u, 58 * u, 31 * u, 11 * u); ctx.fill();
+    circle(x - 12 * u, y - 33 * u, 9 * u, '#34343f'); circle(x + 14 * u, y - 26 * u, 7 * u, '#34343f');
+    ctx.fillStyle = '#f7f4ea'; ctx.beginPath(); ctx.roundRect(x - 44 * u, y - 52 * u, 22 * u, 24 * u, 8 * u); ctx.fill();
+    ctx.fillStyle = '#efb7ad'; ctx.beginPath(); ctx.roundRect(x - 46 * u, y - 37 * u, 20 * u, 10 * u, 5 * u); ctx.fill();
+    circle(x - 38 * u, y - 44 * u, 1.8 * u, '#23232c');
+    tri(x - 30 * u, y - 52 * u, x - 26 * u, y - 60 * u, x - 23 * u, y - 51 * u, '#d6cdb6');
+  } else if (t === 'ice' || t === 'puddle') {
+    ctx.fillStyle = t === 'ice' ? '#d3edf7' : '#7e9fb7'; ctx.beginPath(); ctx.ellipse(x, y - 2 * u, 31 * u, 6 * u, 0, 0, 6.3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.ellipse(x - 9 * u, y - 3 * u, 10 * u, 1.7 * u, 0, 0, 6.3); ctx.fill();
+  } else if (t === 'radar') {
+    rect(x - 2.5 * u, y - 26 * u, 5 * u, 26 * u, '#70747e');
+    ctx.fillStyle = '#d9dbe0'; ctx.beginPath(); ctx.roundRect(x - 13 * u, y - 46 * u, 26 * u, 22 * u, 4 * u); ctx.fill();
+    circle(x - 4 * u, y - 35 * u, 6 * u, '#23232c'); circle(x - 4 * u, y - 35 * u, 2.2 * u, '#7fc4e8'); circle(x + 7 * u, y - 40 * u, 1.8 * u, '#e04a3a');
+  }
+}
+function figura(x, y) {
+  const wave = G.state === 'arrived' || G.state === 'end' ? Math.sin(G.t * 9) * 16 * u : Math.sin(G.t * 3) * 7 * u;
+  rect(x - 7 * u, y - 15 * u, 4 * u, 15 * u, '#2a3350'); rect(x + 3 * u, y - 15 * u, 4 * u, 15 * u, '#2a3350');
+  ctx.fillStyle = '#e6b53f'; ctx.beginPath(); ctx.roundRect(x - 10 * u, y - 41 * u, 20 * u, 28 * u, 7 * u); ctx.fill();
+  ctx.strokeStyle = '#e6b53f'; ctx.lineWidth = 4.5 * u; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - 9 * u, y - 36 * u); ctx.lineTo(x - 22 * u, y - 56 * u + wave * .3); ctx.moveTo(x + 9 * u, y - 36 * u); ctx.lineTo(x + 15 * u, y - 22 * u); ctx.stroke();
+  circle(x, y - 50 * u, 10 * u, '#f2c8a4');
+  ctx.fillStyle = '#4a2e1f'; ctx.beginPath(); ctx.arc(x, y - 51 * u, 11 * u, Math.PI, 0); ctx.fill(); rect(x + 6 * u, y - 52 * u, 5.5 * u, 20 * u, '#4a2e1f');
+  circle(x - 4 * u, y - 49 * u, 1.3 * u, '#23232c');
+}
+function coche() {
+  const y = BY - G.y, moving = G.state === 'play' || G.state === 'intro';
+  const blink = G.inv > 0 && G.state === 'play' && Math.floor(G.t * 12) % 2 === 0;
+  if (G.y > 0) { ctx.fillStyle = `rgba(20,24,34,${clamp(.28 - G.y / (600 * u), .08, .28)})`; ctx.beginPath(); ctx.ellipse(carX, BY + 1, 36 * u, 4.5 * u, 0, 0, 6.3); ctx.fill(); }
+  if (blink) ctx.globalAlpha = .45;
+  ctx.save(); ctx.translate(carX, y);
+  const idle = G.state === 'intro' || (moving && G.y === 0) ? Math.sin(G.t * 16) * .7 * u : 0;
+  ctx.rotate(G.y > 0 ? clamp(-G.vy / (11000 * u), -.14, .14) : 0);
+  ctx.translate(0, idle);
+  // maleta
+  ctx.fillStyle = '#8c5a3b'; ctx.beginPath(); ctx.roundRect(-20 * u, -57 * u, 28 * u, 13 * u, 3 * u); ctx.fill();
+  rect(-8 * u, -57 * u, 4 * u, 13 * u, '#d9b679');
+  // carrocería
+  ctx.fillStyle = '#d9483b';
+  ctx.beginPath(); ctx.moveTo(-38 * u, -8 * u); ctx.lineTo(-38 * u, -22 * u); ctx.quadraticCurveTo(-36 * u, -28 * u, -28 * u, -29 * u); ctx.lineTo(-20 * u, -30 * u);
+  ctx.quadraticCurveTo(-14 * u, -45 * u, 2 * u, -45 * u); ctx.lineTo(10 * u, -45 * u); ctx.quadraticCurveTo(20 * u, -44 * u, 25 * u, -30 * u);
+  ctx.quadraticCurveTo(38 * u, -28 * u, 40 * u, -19 * u); ctx.lineTo(40 * u, -8 * u); ctx.closePath(); ctx.fill();
+  // ventanas
+  ctx.fillStyle = '#cfe7f3';
+  ctx.beginPath(); ctx.moveTo(-14 * u, -30 * u); ctx.quadraticCurveTo(-9 * u, -41 * u, 1 * u, -41 * u); ctx.lineTo(1 * u, -30 * u); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(5 * u, -41 * u); ctx.lineTo(10 * u, -41 * u); ctx.quadraticCurveTo(17 * u, -39 * u, 20 * u, -30 * u); ctx.lineTo(5 * u, -30 * u); ctx.closePath(); ctx.fill();
+  // ella y él dentro
+  circle(12 * u, -34 * u, 4.6 * u, '#f2c8a4'); ctx.fillStyle = '#4a2e1f'; ctx.beginPath(); ctx.arc(12 * u, -35 * u, 5 * u, Math.PI, 0); ctx.fill();
+  circle(-5 * u, -34 * u, 4.6 * u, '#ecbd96'); ctx.fillStyle = '#23232c'; ctx.beginPath(); ctx.arc(-5 * u, -36 * u, 4.8 * u, Math.PI, 0); ctx.fill();
+  // detalles
+  rect(-38 * u, -15 * u, 78 * u, 3.5 * u, '#f6e8d1'); corazon(-20 * u, -20 * u, 4 * u, '#fff'); circle(37 * u, -21 * u, 3 * u, '#ffe39c'); rect(-39 * u, -24 * u, 3.5 * u, 5 * u, '#ff9a8c');
+  // ruedas
+  [-22, 24].forEach(w => {
+    circle(w * u, -8 * u, 9 * u, '#26262e'); circle(w * u, -8 * u, 4 * u, '#d5d6dd');
+    const a = G.km * 3 + G.t * (moving ? 2 : 0); ctx.strokeStyle = '#26262e'; ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.moveTo(w * u + Math.cos(a) * 3.8 * u, -8 * u + Math.sin(a) * 3.8 * u); ctx.lineTo(w * u - Math.cos(a) * 3.8 * u, -8 * u - Math.sin(a) * 3.8 * u); ctx.stroke();
+  });
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+
+/* ---------- bucle ---------- */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.04, (now - last) / 1000); last = now;
+  if (G.state !== 'card') update(dt); else G.t += dt;
+  drawScene();
+  requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange', () => { last = performance.now(); });
+if (CONFIG.ella) $('para').textContent = 'Para ' + CONFIG.ella;
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
