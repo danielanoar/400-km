@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#f6ead8">
+<meta name="robots" content="noindex">
+<title>¿Quién es más?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,500&display=swap">
+<style>
+  :root{
+    --bg:#f6ead8; --paper:#fffaf0; --ink:#2b2a33; --soft:#7a7061; --line:#e6d8bf;
+    --elena:#e0574a; --elena-soft:#fbe0da; --daniel:#3d6fb4; --daniel-soft:#dde8f7;
+    --ok:#3f9d61; --ko:#c9493d;
+    --hand:'Caveat','Bradley Hand','Segoe Script',cursive;
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-user-select:none;user-select:none}
+  #app{position:relative;max-width:520px;height:100vh;height:100dvh;margin:0 auto;overflow:hidden}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
+  .screen.on{display:flex}
+  .btn{display:block;width:100%;min-height:52px;border:0;border-radius:14px;background:var(--ink);color:#fff;font:700 17px/1.2 var(--sans);cursor:pointer;text-align:center;text-decoration:none;padding:16px}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+
+  /* portada */
+  #intro{justify-content:center;text-align:center}
+  #intro .duo{display:flex;justify-content:center;gap:14px;margin:auto 0 22px}
+  .av{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 34px/1 var(--serif);color:#fff;background-size:cover;background-position:center}
+  .av.e{background-color:var(--elena)} .av.d{background-color:var(--daniel)}
+  #intro .duo .av:first-child{transform:rotate(-6deg)} #intro .duo .av:last-child{transform:rotate(6deg)}
+  #intro .para{font:700 28px/1 var(--hand);color:var(--elena)}
+  #intro h1{font:600 clamp(44px,13vw,62px)/1 var(--serif);letter-spacing:-.025em;margin:8px 0 14px}
+  #intro p{font:500 17px/1.45 var(--sans);color:var(--soft);max-width:22em;margin:0 auto}
+  #intro p b{color:var(--ink)}
+  #intro .rule{margin:18px auto 26px;font:700 24px/1.15 var(--hand);color:var(--ink);max-width:16em}
+  #intro .btn{margin-top:auto}
+
+  /* juego */
+  #game{padding-bottom:calc(env(safe-area-inset-bottom) + 12px)}
+  .top{display:flex;align-items:center;justify-content:space-between;font:600 14px/1 var(--sans);color:var(--soft)}
+  .top b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .bar{height:5px;background:var(--line);border-radius:3px;margin-top:10px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--ink);border-radius:3px;transition:width .3s}
+  .sides{position:absolute;inset:0;display:flex;pointer-events:none}
+  .side{flex:1;transition:background .15s}
+  #game.toE .side.e{background:var(--elena-soft)} #game.toD .side.d{background:var(--daniel-soft)}
+  .deck{position:relative;flex:1;display:flex;align-items:center;justify-content:center;margin:12px 0}
+  .card{position:absolute;width:min(100%,340px);min-height:300px;background:var(--paper);border-radius:22px;padding:28px 22px 22px;box-shadow:0 14px 34px rgba(80,60,30,.16),0 2px 0 var(--line);display:flex;flex-direction:column;justify-content:center;text-align:center;touch-action:none;cursor:grab;will-change:transform}
+  .card.back{transform:translateY(12px) scale(.95);opacity:.6;box-shadow:0 6px 16px rgba(80,60,30,.1);pointer-events:none}
+  .card .n{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin-bottom:16px}
+  .card .q{font:600 30px/1.12 var(--serif);letter-spacing:-.01em}
+  .card .hint{margin-top:22px;font:500 22px/1 var(--hand);color:var(--soft)}
+  .card .stamp{position:absolute;top:18px;padding:6px 12px;border:3px solid;border-radius:10px;font:800 20px/1 var(--sans);letter-spacing:.04em;text-transform:uppercase;opacity:0}
+  .card .stamp.e{left:16px;color:var(--elena);transform:rotate(-12deg)}
+  .card .stamp.d{right:16px;color:var(--daniel);transform:rotate(12deg)}
+  .card.fly{transition:transform .32s ease-in,opacity .32s ease-in}
+  .card.snap{transition:transform .25s cubic-bezier(.3,1.5,.5,1)}
+  .who{display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative}
+  .pick{display:flex;align-items:center;gap:10px;min-height:64px;border:0;border-radius:16px;padding:8px 12px;font:700 18px/1 var(--sans);color:#fff;cursor:pointer}
+  .pick .av{width:44px;height:44px;font-size:20px;box-shadow:0 0 0 2px rgba(255,255,255,.75)}
+  .pick.e{background:var(--elena)} .pick.d{background:var(--daniel);flex-direction:row-reverse}
+  .pick .arr{opacity:.75;font-weight:600}
+
+  /* respuesta */
+  #verdict{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(43,42,51,.36);z-index:5}
+  #verdict.on{display:flex}
+  .vbox{width:100%;max-width:340px;background:var(--paper);border-radius:22px;padding:24px 22px 18px;text-align:center;box-shadow:0 18px 44px rgba(30,20,10,.3);animation:pop .3s cubic-bezier(.2,1.4,.5,1)}
+  @keyframes pop{from{transform:scale(.85);opacity:0}}
+  .vbox .big{font:600 34px/1 var(--serif)}
+  .vbox.ok .big{color:var(--ok)} .vbox.ko .big{color:var(--ko)}
+  .vbox .said{margin-top:10px;font:500 15px/1.4 var(--sans);color:var(--soft)}
+  .vbox .said b{color:var(--ink)}
+  .vbox .com{margin-top:12px;font:700 26px/1.15 var(--hand)}
+  .vbox .tap{margin-top:16px;font:500 13px/1 var(--sans);color:var(--soft);opacity:0;transition:opacity .2s}
+  .vbox.ready .tap{opacity:1}
+
+  /* final */
+  #end{overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;display:none}
+  #end.on{display:block}
+  .res{text-align:center;padding-top:8px}
+  .res .kicker{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+  .res .pct{font:600 96px/1 var(--serif);letter-spacing:-.04em;margin:10px 0 2px;font-variant-numeric:tabular-nums}
+  .res .of{font:500 15px/1.3 var(--sans);color:var(--soft)}
+  .res h2{font:600 30px/1.1 var(--serif);margin:18px 0 6px}
+  .res.win .pct,.res.win h2{color:var(--ok)}
+  .res.lose .pct,.res.lose h2{color:var(--ko)}
+  .prize{margin:18px 0 0;background:var(--paper);border-radius:18px;padding:20px;text-align:center;box-shadow:0 10px 28px rgba(80,60,30,.13)}
+  .prize .kicker{font:600 11px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+  .prize p{margin-top:10px;font:700 28px/1.15 var(--hand)}
+  .prize small{display:block;margin-top:10px;font:400 12px/1.4 var(--sans);color:var(--soft)}
+  .acts{display:grid;gap:10px;margin:16px 0 22px}
+  .list ul{padding:0}
+  .list h3{font:600 13px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-bottom:10px}
+  .list li{list-style:none;display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line);font:500 15px/1.35 var(--sans)}
+  .list li i{font-style:normal;font-weight:800;width:18px;flex:none}
+  .list li.ok i{color:var(--ok)} .list li.ko i{color:var(--ko)}
+  .list li span small{display:block;color:var(--soft);font-size:13px;margin-top:2px}
+  @media (prefers-reduced-motion:reduce){.vbox{animation:none}.card.fly,.card.snap{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="intro" class="screen on">
+    <div class="duo"><div class="av e" data-av="e"></div><div class="av d" data-av="d"></div></div>
+    <div class="para" id="para"></div>
+    <h1>¿Quién es más?</h1>
+    <p id="explain"></p>
+    <div class="rule" id="rule"></div>
+    <button class="btn" id="go">Empezar</button>
+  </section>
+
+  <section id="game" class="screen">
+    <div class="sides"><div class="side e"></div><div class="side d"></div></div>
+    <div class="top" style="position:relative"><span>Pregunta <b id="num">1</b> de <b id="tot">0</b></span><span>Aciertos <b id="hits">0</b></span></div>
+    <div class="bar" style="position:relative"><i id="fill"></i></div>
+    <div class="deck" id="deck"></div>
+    <div class="who">
+      <button class="pick e" data-pick="e"><span class="av e" data-av="e"></span><span><span class="arr">←</span> <span data-name="e"></span></span></button>
+      <button class="pick d" data-pick="d"><span class="av d" data-av="d"></span><span><span data-name="d"></span> <span class="arr">→</span></span></button>
+    </div>
+    <div id="verdict"><div class="vbox" id="vbox"><div class="big" id="vBig"></div><div class="said" id="vSaid"></div><div class="com" id="vCom"></div><div class="tap">Toca para seguir →</div></div></div>
+  </section>
+
+  <section id="end" class="screen">
+    <div class="res" id="res">
+      <div class="kicker">Tu resultado</div>
+      <div class="pct" id="pct">0%</div>
+      <div class="of" id="of"></div>
+      <h2 id="rTitle"></h2>
+    </div>
+    <div class="prize">
+      <div class="kicker" id="prKick"></div>
+      <p id="prText"></p>
+      <small id="prFine"></small>
+    </div>
+    <div class="acts">
+      <a class="btn" id="share" target="_blank" rel="noopener">Contárselo por WhatsApp</a>
+      <button class="btn ghost" id="again">Jugar otra vez</button>
+    </div>
+    <div class="list"><h3>Lo que respondió él</h3><ul id="list"></ul></div>
+  </section>
+</div>
+
+<script>
+/* ============  TODO LO PERSONAL ESTÁ AQUÍ  ============
+   resp: 'e' = Elena, 'd' = Daniel, 'ambos' = vale cualquiera.
+   com: lo que aparece después de que ella elija.          */
+const CONFIG = {
+  ella: 'Elena',
+  yo: 'Daniel',
+  fotoElla: '',          // opcional: ruta a una foto (p. ej. 'elena.jpg'); vacío = inicial
+  fotoYo: '',
+  minimo: 80,            // gana si saca MÁS de este porcentaje
+  premio: 'Vale por un día entero en el que tú decides todo: plan, comida, peli y quién se queda con la manta.',
+  castigo: 'Me debes un masaje de 20 minutos. Y otra partida, que esto hay que repetirlo.',
+  preguntas: [
+    { q: '¿Quién es más guapo/a?', resp: 'e', com: 'No hay debate. Ni lo intentes.' },
+    { q: '¿Quién es más cabezota?', resp: 'e', com: 'Lo siento, pero tú lo sabes.' },
+    { q: '¿Quién tarda más en arreglarse?', resp: 'e', com: '«Cinco minutos y salgo». Ya.' },
+    { q: '¿Quién se duerme antes viendo una peli?', resp: 'ambos', com: 'Los dos. Nunca hemos visto un final.' },
+    { q: '¿Quién es más romántico/a?', resp: 'd', com: 'Te he hecho dos juegos. Caso cerrado.' },
+    { q: '¿Quién echa más de menos al otro?', resp: 'd', com: 'Cada día, desde Madrid.' },
+    { q: '¿Quién se queda con más manta?', resp: 'd', com: 'Lo reconozco. Pero te dejo una esquinita.' },
+    { q: '¿Quién pide perdón antes?', resp: 'ambos', com: 'Los dos. Y luego nos reímos.' },
+    { q: '¿Quién gana las discusiones?', resp: 'e', com: 'Siempre. Incluso cuando no tienes razón.' },
+    { q: '¿Quién es más friolero/a?', resp: 'e', com: 'Y eso que vives en Santander.' },
+    { q: '¿Quién come más?', resp: 'd', com: 'Y encima me como lo tuyo.' },
+    { q: '¿Quién se ríe de sus propios chistes?', resp: 'd', com: 'Alguien tiene que hacerlo.' },
+    { q: '¿Quién llora más con las películas?', resp: 'd', com: 'Sí, lloro. Y no me avergüenzo.' },
+    { q: '¿Quién es más desordenado/a?', resp: 'd', com: 'Es un orden que solo entiendo yo.' },
+    { q: '¿Quién manda el primer mensaje por la mañana?', resp: 'ambos', com: 'Los dos. A veces se cruzan los buenos días.' },
+    { q: '¿Quién se pone más pesado/a cuando está malo/a?', resp: 'd', com: 'Un catarro y ya hago testamento.' },
+    { q: '¿Quién tiene más paciencia?', resp: 'd', com: 'Y la necesito, con lo cabezota que eres.' },
+    { q: '¿Quién se enfada antes?', resp: 'e', com: 'Pero se te pasa rápido. Y te quiero igual.' },
+    { q: '¿Quién tiene peor despertar?', resp: 'e', com: 'Antes del café, mejor ni hablarte.' },
+    { q: '¿Quién ronca más?', resp: 'd', com: 'Yo no ronco. Respiro con personalidad.' },
+    { q: '¿Quién manda más?', resp: 'e', com: 'Y yo encantado.' },
+    { q: '¿Quién tiene más suerte?', resp: 'd', com: 'Te tengo a ti. No hay más preguntas.' },
+    { q: '¿Quién hace más planes de futuro?', resp: 'ambos', com: 'Los dos. Y quiero todos contigo.' },
+    { q: '¿Quién quiere más al otro?', resp: 'd', com: 'Yo. Discútemelo en persona.' },
+  ],
+};
+/* ====================================================== */
+
+const $ = id => document.getElementById(id);
+const Q = CONFIG.preguntas, N = { e: CONFIG.ella, d: CONFIG.yo };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let i = 0, hits = 0, answers = [], busy = false, verdictAt = 0;
+
+// nombres y avatares
+document.querySelectorAll('[data-name]').forEach(el => el.textContent = N[el.dataset.name]);
+document.querySelectorAll('[data-av]').forEach(el => {
+  const k = el.dataset.av, foto = k === 'e' ? CONFIG.fotoElla : CONFIG.fotoYo;
+  if (foto) el.style.backgroundImage = `url("${foto}")`; else el.textContent = N[k][0];
+});
+$('para').textContent = 'Para ' + CONFIG.ella;
+$('explain').innerHTML = `${CONFIG.yo} ya ha contestado ${Q.length} preguntas. Tú tienes que adivinar qué ha dicho: arrastra cada tarjeta <b>hacia ti (izquierda)</b> o <b>hacia él (derecha)</b>.`;
+$('rule').textContent = `Si aciertas más del ${CONFIG.minimo}%, hay premio.`;
+$('tot').textContent = Q.length;
+
+/* ---------- sonido ---------- */
+let ac = null;
+function tone(f, d = .12, type = 'sine', v = .05, delay = 0) {
+  if (!ac) return; const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + .02);
+}
+
+/* ---------- tarjetas ---------- */
+function makeCard(idx, back) {
+  const c = document.createElement('div'); c.className = 'card' + (back ? ' back' : '');
+  c.innerHTML = `<div class="stamp e">${N.e}</div><div class="stamp d">${N.d}</div><div class="n">${idx + 1} / ${Q.length}</div><div class="q"></div>${idx === 0 ? '<div class="hint">← arrástrala →</div>' : ''}`;
+  c.querySelector('.q').textContent = Q[idx].q;
+  return c;
+}
+function render() {
+  const deck = $('deck'); deck.innerHTML = '';
+  if (i + 1 < Q.length) deck.appendChild(makeCard(i + 1, true));
+  const c = makeCard(i, false); deck.appendChild(c); drag(c);
+  $('num').textContent = i + 1; $('fill').style.width = (i / Q.length * 100) + '%';
+}
+function setLean(c, dx) {
+  const t = Math.max(-1, Math.min(1, dx / 110));
+  c.querySelector('.stamp.e').style.opacity = Math.max(0, -t);
+  c.querySelector('.stamp.d').style.opacity = Math.max(0, t);
+  $('game').classList.toggle('toE', t < -.35); $('game').classList.toggle('toD', t > .35);
+}
+function drag(c) {
+  let sx = 0, sy = 0, dx = 0, dy = 0, on = false, t0 = 0;
+  c.addEventListener('pointerdown', e => {
+    if (busy) return; on = true; sx = e.clientX; sy = e.clientY; dx = dy = 0; t0 = performance.now();
+    c.classList.remove('snap'); c.setPointerCapture(e.pointerId);
+  });
+  c.addEventListener('pointermove', e => {
+    if (!on) return; dx = e.clientX - sx; dy = e.clientY - sy;
+    c.style.transform = `translate(${dx}px,${dy * .4}px) rotate(${dx / 18}deg)`; setLean(c, dx);
+  });
+  const up = () => {
+    if (!on) return; on = false;
+    const v = Math.abs(dx) / Math.max(1, performance.now() - t0);
+    if (Math.abs(dx) > 100 || (Math.abs(dx) > 40 && v > .6)) choose(dx < 0 ? 'e' : 'd');
+    else { c.classList.add('snap'); c.style.transform = ''; setLean(c, 0); }
+  };
+  c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+}
+function choose(who) {
+  if (busy) return; busy = true;
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  const c = $('deck').lastElementChild, q = Q[i];
+  setLean(c, who === 'e' ? -200 : 200);
+  c.classList.remove('snap'); c.classList.add('fly');
+  c.style.transform = `translate(${who === 'e' ? -140 : 140}vw,40px) rotate(${who === 'e' ? -28 : 28}deg)`;
+  const ok = q.resp === 'ambos' || q.resp === who;
+  if (ok) hits++;
+  answers.push({ q: q.q, who, ok, resp: q.resp });
+  $('hits').textContent = hits;
+  setTimeout(() => showVerdict(ok, q), reduced ? 0 : 280);
+}
+function showVerdict(ok, q) {
+  $('game').classList.remove('toE', 'toD');
+  const box = $('vbox'); box.className = 'vbox ' + (ok ? 'ok' : 'ko');
+  $('vBig').textContent = ok ? '¡Acertaste!' : '¡Fallaste!';
+  $('vSaid').innerHTML = q.resp === 'ambos' ? `${N.d} dijo: <b>los dos</b>` : `${N.d} dijo: <b>${N[q.resp]}</b>`;
+  $('vCom').textContent = q.com;
+  $('verdict').classList.add('on'); verdictAt = performance.now();
+  if (ok) { tone(660, .1); tone(990, .16, 'sine', .05, .08); } else tone(180, .25, 'triangle', .06);
+  try { if (!ok && navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+  setTimeout(() => box.classList.add('ready'), 600);
+}
+function next() {
+  if (performance.now() - verdictAt < 600) return;
+  $('verdict').classList.remove('on'); i++; busy = false;
+  if (i >= Q.length) finish(); else render();
+}
+$('verdict').addEventListener('click', next);
+document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => choose(b.dataset.pick)));
+addEventListener('keydown', e => {
+  if (!$('game').classList.contains('on')) return;
+  if ($('verdict').classList.contains('on')) { if (['Enter', ' ', 'ArrowRight', 'ArrowLeft'].includes(e.key)) next(); return; }
+  if (e.key === 'ArrowLeft') choose('e'); if (e.key === 'ArrowRight') choose('d');
+});
+
+/* ---------- final ---------- */
+function finish() {
+  const pct = Math.round(hits / Q.length * 100), win = hits / Q.length * 100 > CONFIG.minimo;
+  $('game').classList.remove('on'); $('end').classList.add('on'); $('end').scrollTop = 0;
+  $('res').className = 'res ' + (win ? 'win' : 'lose');
+  $('pct').textContent = pct + '%';
+  $('of').textContent = `${hits} de ${Q.length} aciertos · hacía falta más del ${CONFIG.minimo}%`;
+  $('rTitle').textContent = win ? '¡Has ganado!' : 'Casi…';
+  $('prKick').textContent = win ? 'Tu premio' : 'Tu castigo';
+  $('prText').textContent = win ? CONFIG.premio : CONFIG.castigo;
+  $('prFine').textContent = win ? `Canjeable en persona. ${CONFIG.yo} no puede negarse.` : 'Y si no te parece justo, puedes volver a jugar. Pero esto ya lo he visto.';
+  const msg = win ? `He sacado un ${pct}% en «¿Quién es más?». He ganado. Ve preparando mi premio.` : `He sacado un ${pct}% en «¿Quién es más?»… Tenemos que hablar de algunas respuestas.`;
+  $('share').href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  const ul = $('list'); ul.innerHTML = '';
+  answers.forEach(a => {
+    const li = document.createElement('li'); li.className = a.ok ? 'ok' : 'ko';
+    const said = a.resp === 'ambos' ? 'los dos' : N[a.resp];
+    li.innerHTML = `<i>${a.ok ? '✓' : '✗'}</i><span></span>`;
+    li.querySelector('span').textContent = a.q;
+    const sm = document.createElement('small'); sm.textContent = `Él dijo: ${said}` + (a.ok ? '' : ` · tú dijiste: ${N[a.who]}`);
+    li.querySelector('span').appendChild(sm); ul.appendChild(li);
+  });
+  if (win) [523, 659, 784, 1047].forEach((f, k) => tone(f, .3, 'triangle', .05, k * .13));
+  else [392, 330, 262].forEach((f, k) => tone(f, .3, 'triangle', .05, k * .16));
+}
+function start() {
+  i = 0; hits = 0; answers = []; busy = false; $('hits').textContent = 0;
+  $('intro').classList.remove('on'); $('end').classList.remove('on'); $('game').classList.add('on'); render();
+}
+$('go').onclick = start; $('again').onclick = start;
+</script>
+</body>
+</html>
